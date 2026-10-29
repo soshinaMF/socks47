@@ -10,13 +10,13 @@
 <style>
 :root{
   --ink:#16302b; --mute:#5f7673; --ground:#eef4f1; --card:#ffffff; --line:#d3e0dc;
-  --have:#0f9d58; --have-bg:#e1f5ea; --get:#d99100; --get-bg:#fff2cc; --none:#c9d6d2;
+  --have:#0f9d58; --have-bg:#e1f5ea; --get:#d99100; --get-bg:#fff2cc; --none:#c9d6d2; --skip:#7c6f8c;
   --focus:#1a73e8;
 }
 @media (prefers-color-scheme: dark){
   :root{
     --ink:#e6f1ee; --mute:#93a9a6; --ground:#0f1a18; --card:#16241f; --line:#27403a;
-    --have:#3ccf86; --have-bg:#15382a; --get:#f2b632; --get-bg:#3d3112; --none:#35504a;
+    --have:#3ccf86; --have-bg:#15382a; --get:#f2b632; --get-bg:#3d3112; --none:#35504a; --skip:#a597b8;
     --focus:#7ab0ff;
   }
 }
@@ -39,13 +39,14 @@ h1{margin:0; font-size:1.5rem; letter-spacing:.02em}
 .modebtn:active{background:var(--line)}
 .count{display:flex; gap:18px; margin:10px 0 14px; font-size:.95rem}
 .count b{font-size:1.5rem; font-variant-numeric:tabular-nums}
-.count .h b{color:var(--have)} .count .g b{color:var(--get)} .count .n b{color:var(--mute)}
+.count .h b{color:var(--have)} .count .g b{color:var(--get)} .count .n b{color:var(--mute)} .count .s b{color:var(--skip)}
 .strip{display:grid; grid-template-columns:repeat(47,1fr); gap:2px}
 .cell{
   appearance:none; border:0; padding:0; height:18px; border-radius:2px; background:var(--none); cursor:pointer;
 }
 .cell[data-status="GET"]{background:var(--get)}
 .cell[data-status="HAVE"]{background:var(--have)}
+.cell[data-status="いらない"]{background:transparent; box-shadow:inset 0 0 0 1px var(--none)}
 .cell:focus-visible,button:focus-visible,select:focus-visible{outline:3px solid var(--focus); outline-offset:2px}
 .stripnote{margin:6px 0 0; font-size:.78rem; color:var(--mute)}
 .tabs{
@@ -72,6 +73,8 @@ main{
 }
 .card[data-status="GET"]{border-color:var(--get)}
 .card[data-status="HAVE"]{border-color:var(--have)}
+.card[data-status="いらない"]{border-style:dashed; border-color:var(--none); opacity:.6}
+.card[data-status="いらない"] .photo img{filter:grayscale(1); opacity:.4}
 .card.flash{outline:4px solid var(--focus); outline-offset:2px}
 .photo{position:relative; aspect-ratio:1/1; background:#fff; display:grid; place-items:center}
 .photo img{width:100%; height:100%; object-fit:contain; transition:filter .2s, opacity .2s}
@@ -84,6 +87,7 @@ main{
   position:absolute; right:8px; top:8px; font-weight:700; font-size:.8rem; padding:2px 9px; border-radius:999px; color:#fff;
 }
 .card[data-status=""] .flag{display:none}
+.card[data-status="いらない"] .flag{background:var(--skip)}
 .card[data-status="GET"] .flag{background:var(--get)}
 .card[data-status="HAVE"] .flag{background:var(--have)}
 .info{padding:10px 12px 4px}
@@ -104,6 +108,10 @@ select{
 .seg button[data-v=""][aria-pressed="true"]{background:var(--mute)}
 .seg button[data-v="GET"][aria-pressed="true"]{background:var(--get)}
 .seg button[data-v="HAVE"][aria-pressed="true"]{background:var(--have)}
+.seg button[data-v="いらない"][aria-pressed="true"]{background:var(--skip)}
+.seg.four{grid-template-columns:1fr 1fr}
+.seg.four button:nth-child(3){border-left:0}
+.seg.four button:nth-child(n+3){border-top:1px solid var(--line)}
 .empty{grid-column:1/-1; text-align:center; color:var(--mute); padding:40px 0}
 @media (prefers-reduced-motion: reduce){ .photo img{transition:none} }
 </style>
@@ -118,6 +126,7 @@ select{
     <span class="h"><b id="nHave">0</b> HAVE</span>
     <span class="g"><b id="nGet">0</b> GET</span>
     <span class="n"><b id="nNone">47</b> 未所持</span>
+    <span class="s" id="skipCount" hidden><b id="nSkip">0</b> いらない</span>
   </div>
   <div class="strip" id="strip" aria-label="状況の一覧"></div>
   <p class="stripnote">四角をタップすると、そのカードに移動します</p>
@@ -127,6 +136,7 @@ select{
   <button class="tab" data-f="" aria-pressed="false">未所持</button>
   <button class="tab" data-f="GET" aria-pressed="false">GET</button>
   <button class="tab" data-f="HAVE" aria-pressed="false">HAVE</button>
+  <button class="tab" id="skipTab" data-f="いらない" aria-pressed="false" hidden>いらない</button>
 </nav>
 <div id="msg"></div>
 <main id="grid"></main>
@@ -223,10 +233,11 @@ ITEMS.forEach((it) => {
       <select aria-label="${it.name}のサイズ">
         <option value="22-25cm">22-25cm</option><option value="25-28cm">25-28cm</option>
       </select>
-      <div class="seg" role="group" aria-label="${it.name}の状態">
+      <div class="seg${it.mode === "line" ? " four" : ""}" role="group" aria-label="${it.name}の状態">
         <button data-v="" aria-pressed="true">なし</button>
         <button data-v="GET" aria-pressed="false">GET</button>
-        <button data-v="HAVE" aria-pressed="false">HAVE</button>
+        <button data-v="HAVE" aria-pressed="false">HAVE</button>${it.mode === "line" ? `
+        <button data-v="いらない" aria-pressed="false">いらない</button>` : ""}
       </div>
     </div>`;
   grid.append(card); cards.push(card);
@@ -255,7 +266,7 @@ function update(){
   $("#modeBtn").setAttribute("aria-label", `${info.other}の一覧に切り替える`);
   strip.style.gridTemplateColumns = `repeat(${info.n}, 1fr)`;
 
-  let have = 0, get = 0, shown = 0;
+  let have = 0, get = 0, skip = 0, shown = 0;
   ITEMS.forEach((it, k) => {
     const inMode = it.mode === mode;
     const { status, size } = current(it.id);
@@ -269,13 +280,16 @@ function update(){
     const match = inMode && (filter === "all" || filter === status);
     card.hidden = !match;
     if (inMode){
-      if (status === "HAVE") have++; else if (status === "GET") get++;
+      if (status === "HAVE") have++; else if (status === "GET") get++; else if (status === "いらない") skip++;
       if (match) shown++;
     }
   });
   $("#nHave").textContent = have;
   $("#nGet").textContent = get;
-  $("#nNone").textContent = info.n - have - get;
+  $("#nNone").textContent = info.n - have - get - skip;
+  $("#nSkip").textContent = skip;
+  $("#skipCount").hidden = mode !== "line";
+  $("#skipTab").hidden = mode !== "line";
   empty.hidden = shown !== 0;
 }
 
@@ -340,7 +354,7 @@ if (!firebaseConfig || !firebaseConfig.projectId || String(firebaseConfig.apiKey
   onSnapshot(collection(db, "socks"), (snap) => {
     snap.forEach((d) => {
       const v = d.data();
-      data[d.id] = { status: v.status || "", size: v.size || DEFAULT_SIZE };
+      data[d.id] = { status: ["GET", "HAVE", "いらない"].includes(v.status) ? v.status : "", size: v.size || DEFAULT_SIZE };
     });
     update();
   }, (err) => {
