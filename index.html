@@ -30,7 +30,13 @@ body{
   padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 header{padding:20px 16px 8px; max-width:960px; margin:0 auto}
+.titlebar{display:flex; align-items:center; justify-content:space-between; gap:12px}
 h1{margin:0; font-size:1.5rem; letter-spacing:.02em}
+.modebtn{
+  appearance:none; border:1px solid var(--line); background:var(--card); color:var(--ink);
+  font:inherit; font-size:.9rem; padding:8px 16px; border-radius:999px; cursor:pointer; white-space:nowrap; min-height:40px;
+}
+.modebtn:active{background:var(--line)}
 .count{display:flex; gap:18px; margin:10px 0 14px; font-size:.95rem}
 .count b{font-size:1.5rem; font-variant-numeric:tabular-nums}
 .count .h b{color:var(--have)} .count .g b{color:var(--get)} .count .n b{color:var(--mute)}
@@ -104,14 +110,17 @@ select{
 </head>
 <body>
 <header>
-  <h1>47ソックス</h1>
+  <div class="titlebar">
+    <h1 id="title">47ソックス</h1>
+    <button class="modebtn" id="modeBtn" type="button">通常商品</button>
+  </div>
   <div class="count">
     <span class="h"><b id="nHave">0</b> HAVE</span>
     <span class="g"><b id="nGet">0</b> GET</span>
     <span class="n"><b id="nNone">47</b> 未所持</span>
   </div>
-  <div class="strip" id="strip" aria-label="47都道府県の状況"></div>
-  <p class="stripnote">四角をタップすると、その県のカードに移動します</p>
+  <div class="strip" id="strip" aria-label="状況の一覧"></div>
+  <p class="stripnote">四角をタップすると、そのカードに移動します</p>
 </header>
 <nav class="tabs" id="tabs">
   <button class="tab" data-f="all" aria-pressed="true">すべて</button>
@@ -148,12 +157,45 @@ const SOCKS = [
 ["鹿児島県","ミヤマキリシマ","kagishima"],["沖縄県","デイゴ","okinawa"]
 ];
 
+const GOODS = "https://www.family.co.jp/content/dam/family/goods/";
+// 通常商品（ラインソックス）[商品番号, 表示名, 税込価格, 備考]
+const LINES = [
+["7411076","2026 秋の色/ホワイト",429,""],
+["7411151","2026 秋の色/ブラック",429,""],
+["7443145","砂漠と青空/ホワイト",600,""],
+["7443152","砂漠と青空/ブラック",600,""],
+["7443268","フジロック’26/ブラック",600,""],
+["7443251","フジロック’26/ホワイト",600,""],
+["7442957","ブラック＆イエロー",700,"九州限定"],
+["7442940","ホワイト＆イエロー",700,"九州限定"],
+["7441486","45周年ファミマボーダー",429,""],
+["74127900","コンビニブラック",429,""],
+["7410895","コンビニホワイト",429,""]
+];
+
 const $ = (s) => document.querySelector(s);
 const pad = (n) => String(n).padStart(2, "0");
 const DEFAULT_SIZE = "22-25cm";
 const data = {};          // id -> {status, size}
 let filter = "all";
+let mode = "pref";        // "pref"=都道府県, "line"=通常商品
 let db = null;
+
+// 全アイテム（都道府県47 + ラインソックス）
+const ITEMS = [];
+SOCKS.forEach(([pref, flower, slug], i) => {
+  const id = pad(i + 1);
+  ITEMS.push({ mode: "pref", id, no: i + 1, name: pref, sub: flower, alt: `${pref}のソックス`,
+    srcs: [`${BASE}${id}_${slug}_main.jpg`] });
+});
+LINES.forEach(([id, name, price, note], i) => {
+  ITEMS.push({ mode: "line", id, no: i + 1, name, sub: `${price}円（税込）${note ? "・" + note : ""}`,
+    alt: `ラインソックス ${name}`, srcs: [`${GOODS}${id}.webp`, `${GOODS}${id}.jpg`] });
+});
+const MODE_INFO = {
+  pref: { title: "47ソックス", other: "通常商品", n: SOCKS.length },
+  line: { title: "ラインソックス", other: "都道府県", n: LINES.length }
+};
 
 function say(text){
   const box = $("#msg");
@@ -163,64 +205,77 @@ function say(text){
 
 // ---------- 画面を作る（最初の1回だけ） ----------
 const grid = $("#grid"), strip = $("#strip");
-SOCKS.forEach(([pref, flower, slug], i) => {
-  const id = pad(i + 1);
-  const img = `${BASE}${id}_${slug}_main.jpg`;
-
+const cards = [], cells = [];
+ITEMS.forEach((it) => {
   const cell = document.createElement("button");
-  cell.className = "cell"; cell.dataset.id = id; cell.dataset.status = "";
-  cell.setAttribute("aria-label", `${pref}へ移動`);
-  strip.append(cell);
+  cell.className = "cell"; cell.dataset.id = it.id; cell.dataset.status = "";
+  cell.setAttribute("aria-label", `${it.name}へ移動`);
+  strip.append(cell); cells.push(cell);
 
   const card = document.createElement("article");
-  card.className = "card"; card.id = "c" + id; card.dataset.id = id; card.dataset.status = "";
+  card.className = "card"; card.id = "c" + it.id; card.dataset.id = it.id; card.dataset.status = "";
   card.innerHTML = `
-    <div class="photo"><span class="no">${i + 1}</span>
-      <img loading="lazy" alt="${pref}のソックス" src="${img}">
+    <div class="photo"><span class="no">${it.no}</span>
+      <img loading="lazy" alt="${it.alt}" src="${it.srcs[0]}" data-srcs="${it.srcs.join("|")}" data-i="0">
       <span class="flag"></span></div>
-    <div class="info"><h2>${pref}</h2><p>${flower}</p></div>
+    <div class="info"><h2>${it.name}</h2><p>${it.sub}</p></div>
     <div class="ctl">
-      <select aria-label="${pref}のサイズ">
+      <select aria-label="${it.name}のサイズ">
         <option value="22-25cm">22-25cm</option><option value="25-28cm">25-28cm</option>
       </select>
-      <div class="seg" role="group" aria-label="${pref}の状態">
+      <div class="seg" role="group" aria-label="${it.name}の状態">
         <button data-v="" aria-pressed="true">なし</button>
         <button data-v="GET" aria-pressed="false">GET</button>
         <button data-v="HAVE" aria-pressed="false">HAVE</button>
       </div>
     </div>`;
-  grid.append(card);
+  grid.append(card); cards.push(card);
 });
 const empty = document.createElement("p");
 empty.className = "empty"; empty.textContent = "該当するソックスはありません"; empty.hidden = true;
 grid.append(empty);
 
-// 画像が読み込めないときは番号だけ表示
+// 画像が読み込めないときは次の候補を試し、全部だめなら番号だけ表示
 grid.addEventListener("error", (e) => {
-  if (e.target.tagName === "IMG") e.target.style.visibility = "hidden";
+  const t = e.target;
+  if (t.tagName !== "IMG") return;
+  const list = (t.dataset.srcs || "").split("|");
+  const next = Number(t.dataset.i || 0) + 1;
+  if (list[next]){ t.dataset.i = String(next); t.src = list[next]; }
+  else { t.style.visibility = "hidden"; }
 }, true);
 
 // ---------- 表示の更新 ----------
 function current(id){ return data[id] || { status: "", size: DEFAULT_SIZE }; }
 
 function update(){
+  const info = MODE_INFO[mode];
+  $("#title").textContent = info.title;
+  $("#modeBtn").textContent = info.other;
+  $("#modeBtn").setAttribute("aria-label", `${info.other}の一覧に切り替える`);
+  strip.style.gridTemplateColumns = `repeat(${info.n}, 1fr)`;
+
   let have = 0, get = 0, shown = 0;
-  SOCKS.forEach((_, i) => {
-    const id = pad(i + 1), { status, size } = current(id);
-    if (status === "HAVE") have++; else if (status === "GET") get++;
-    const card = $("#c" + id);
+  ITEMS.forEach((it, k) => {
+    const inMode = it.mode === mode;
+    const { status, size } = current(it.id);
+    const card = cards[k];
+    cells[k].hidden = !inMode;
+    cells[k].dataset.status = status;
     card.dataset.status = status;
     card.querySelector("select").value = size;
     card.querySelector(".flag").textContent = status;
     card.querySelectorAll(".seg button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.v === status)));
-    const match = filter === "all" || filter === status;
+    const match = inMode && (filter === "all" || filter === status);
     card.hidden = !match;
-    if (match) shown++;
-    strip.children[i].dataset.status = status;
+    if (inMode){
+      if (status === "HAVE") have++; else if (status === "GET") get++;
+      if (match) shown++;
+    }
   });
   $("#nHave").textContent = have;
   $("#nGet").textContent = get;
-  $("#nNone").textContent = 47 - have - get;
+  $("#nNone").textContent = info.n - have - get;
   empty.hidden = shown !== 0;
 }
 
@@ -266,6 +321,12 @@ $("#tabs").addEventListener("click", (e) => {
   if (!t) return;
   filter = t.dataset.f;
   syncTabs(); update();
+});
+$("#modeBtn").addEventListener("click", () => {
+  mode = mode === "pref" ? "line" : "pref";
+  filter = "all";
+  syncTabs(); update();
+  window.scrollTo({ top: 0, behavior: "smooth" });
 });
 
 // ---------- Firebaseにつなぐ ----------
