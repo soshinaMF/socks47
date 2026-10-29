@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>47ソックス</title>
+<style>
+:root{
+  --ink:#16302b; --mute:#5f7673; --ground:#eef4f1; --card:#ffffff; --line:#d3e0dc;
+  --have:#0f9d58; --have-bg:#e1f5ea; --get:#d99100; --get-bg:#fff2cc; --none:#c9d6d2;
+  --focus:#1a73e8;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --ink:#e6f1ee; --mute:#93a9a6; --ground:#0f1a18; --card:#16241f; --line:#27403a;
+    --have:#3ccf86; --have-bg:#15382a; --get:#f2b632; --get-bg:#3d3112; --none:#35504a;
+    --focus:#7ab0ff;
+  }
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:"Hiragino Maru Gothic ProN","Hiragino Sans","Noto Sans JP","Yu Gothic",sans-serif;
+  line-height:1.5;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+header{padding:20px 16px 8px; max-width:960px; margin:0 auto}
+h1{margin:0; font-size:1.5rem; letter-spacing:.02em}
+.count{display:flex; gap:18px; margin:10px 0 14px; font-size:.95rem}
+.count b{font-size:1.5rem; font-variant-numeric:tabular-nums}
+.count .h b{color:var(--have)} .count .g b{color:var(--get)} .count .n b{color:var(--mute)}
+.strip{display:grid; grid-template-columns:repeat(47,1fr); gap:2px}
+.cell{
+  appearance:none; border:0; padding:0; height:18px; border-radius:2px; background:var(--none); cursor:pointer;
+}
+.cell[data-status="GET"]{background:var(--get)}
+.cell[data-status="HAVE"]{background:var(--have)}
+.cell:focus-visible,button:focus-visible,select:focus-visible{outline:3px solid var(--focus); outline-offset:2px}
+.stripnote{margin:6px 0 0; font-size:.78rem; color:var(--mute)}
+.tabs{
+  position:sticky; top:0; z-index:5; background:var(--ground);
+  display:flex; gap:8px; padding:10px 16px; max-width:960px; margin:0 auto; overflow-x:auto;
+  padding-top:calc(10px + env(safe-area-inset-top));
+}
+.tab{
+  appearance:none; border:1px solid var(--line); background:var(--card); color:var(--ink);
+  padding:8px 14px; border-radius:999px; font:inherit; font-size:.9rem; white-space:nowrap; cursor:pointer;
+}
+.tab[aria-pressed="true"]{background:var(--ink); color:var(--ground); border-color:var(--ink)}
+#msg{max-width:960px; margin:8px auto 0; padding:0 16px}
+#msg p{margin:0; padding:10px 12px; border-radius:8px; background:var(--get-bg); font-size:.9rem}
+main{
+  max-width:960px; margin:0 auto; padding:8px 16px 40px;
+  display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px;
+}
+@media (min-width:640px){ main{grid-template-columns:repeat(3,minmax(0,1fr))} }
+@media (min-width:900px){ main{grid-template-columns:repeat(4,minmax(0,1fr))} }
+.card{
+  background:var(--card); border:2px solid var(--line); border-radius:14px; overflow:hidden;
+  display:flex; flex-direction:column;
+}
+.card[data-status="GET"]{border-color:var(--get)}
+.card[data-status="HAVE"]{border-color:var(--have)}
+.card.flash{outline:4px solid var(--focus); outline-offset:2px}
+.photo{position:relative; aspect-ratio:1/1; background:#fff; display:grid; place-items:center}
+.photo img{width:100%; height:100%; object-fit:contain; transition:filter .2s, opacity .2s}
+.card[data-status=""] .photo img{filter:grayscale(1); opacity:.45}
+.photo .no{
+  position:absolute; left:8px; top:6px; font-size:.8rem; color:#4a5f5c; font-variant-numeric:tabular-nums;
+  background:rgba(255,255,255,.85); padding:0 6px; border-radius:6px;
+}
+.photo .flag{
+  position:absolute; right:8px; top:8px; font-weight:700; font-size:.8rem; padding:2px 9px; border-radius:999px; color:#fff;
+}
+.card[data-status=""] .flag{display:none}
+.card[data-status="GET"] .flag{background:var(--get)}
+.card[data-status="HAVE"] .flag{background:var(--have)}
+.info{padding:10px 12px 4px}
+.info h2{margin:0; font-size:1.05rem}
+.info p{margin:0; font-size:.85rem; color:var(--mute)}
+.ctl{padding:8px 12px 12px; display:grid; gap:8px}
+select{
+  font:inherit; font-size:.9rem; padding:7px 8px; border-radius:8px; border:1px solid var(--line);
+  background:var(--card); color:var(--ink); width:100%;
+}
+.seg{display:grid; grid-template-columns:1fr 1fr 1fr; border:1px solid var(--line); border-radius:10px; overflow:hidden}
+.seg button{
+  appearance:none; border:0; background:var(--card); color:var(--mute); font:inherit; font-size:.9rem;
+  padding:10px 0; cursor:pointer; min-height:44px;
+}
+.seg button + button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{color:#fff; font-weight:700}
+.seg button[data-v=""][aria-pressed="true"]{background:var(--mute)}
+.seg button[data-v="GET"][aria-pressed="true"]{background:var(--get)}
+.seg button[data-v="HAVE"][aria-pressed="true"]{background:var(--have)}
+.empty{grid-column:1/-1; text-align:center; color:var(--mute); padding:40px 0}
+@media (prefers-reduced-motion: reduce){ .photo img{transition:none} }
+</style>
+</head>
+<body>
+<header>
+  <h1>47ソックス</h1>
+  <div class="count">
+    <span class="h"><b id="nHave">0</b> HAVE</span>
+    <span class="g"><b id="nGet">0</b> GET</span>
+    <span class="n"><b id="nNone">47</b> 未所持</span>
+  </div>
+  <div class="strip" id="strip" aria-label="47都道府県の状況"></div>
+  <p class="stripnote">四角をタップすると、その県のカードに移動します</p>
+</header>
+<nav class="tabs" id="tabs">
+  <button class="tab" data-f="all" aria-pressed="true">すべて</button>
+  <button class="tab" data-f="" aria-pressed="false">未所持</button>
+  <button class="tab" data-f="GET" aria-pressed="false">GET</button>
+  <button class="tab" data-f="HAVE" aria-pressed="false">HAVE</button>
+</nav>
+<div id="msg"></div>
+<main id="grid"></main>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, doc, setDoc, onSnapshot, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const BASE = "https://www.family.co.jp/content/dam/family/goods/conveniencewear/47socks/";
+// [都道府県, 花, 画像ファイル名の県部分]
+const SOCKS = [
+["北海道","ハマナス","hokkaido"],["青森県","リンゴの花","aomori"],["岩手県","キリ","iwate"],
+["宮城県","ミヤギノハギ","miyagi"],["秋田県","フキノトウ","akita"],["山形県","ベニバナ","yamagata"],
+["福島県","ネモトシャクナゲ","fukushima"],["茨城県","バラ","ibaraki"],["栃木県","ヤシオツツジ","tochigi"],
+["群馬県","レンゲツツジ","gunma"],["埼玉県","サクラソウ","saitama"],["千葉県","ナノハナ","chiba"],
+["東京都","ソメイヨシノ","tokyo"],["神奈川県","ヤマユリ","kanagawa"],["新潟県","チューリップ","nigata"],
+["富山県","チューリップ","toyama"],["石川県","クロユリ","ishikawa"],["福井県","スイセン","fukui"],
+["山梨県","フジザクラ","yamanashi"],["長野県","リンドウ","nagano"],["岐阜県","レンゲソウ","gifu"],
+["静岡県","ツツジ","shizuoka_"],["愛知県","カキツバタ","aichi"],["三重県","ハナショウブ","mie"],
+["滋賀県","シャクナゲ","shiga"],["京都府","シダレザクラ","kyoto"],["大阪府","サクラソウ","osaka"],
+["兵庫県","ノジギク","hyogo"],["奈良県","ナラノヤエザクラ","nara"],["和歌山県","ウメ","wakayama"],
+["鳥取県","ニジッセイキナシの花","tottori"],["島根県","ボタン","shimane"],["岡山県","モモ","okayama"],
+["広島県","モミジ","hiroshima"],["山口県","ナツミカンの花","yamaguchi"],["徳島県","スダチの花","tokushima"],
+["香川県","オリーブ","kagawa"],["愛媛県","ミカンの花","ehime"],["高知県","ヤマモモ","kochi"],
+["福岡県","ウメ","fukuoka"],["佐賀県","クスの花","saga"],["長崎県","ウンゼンツツジ","nagasaki"],
+["熊本県","リンドウ","kumamoto"],["大分県","ブンゴウメ","oita"],["宮崎県","ハマユウ","miyazaki"],
+["鹿児島県","ミヤマキリシマ","kagishima"],["沖縄県","デイゴ","okinawa"]
+];
+
+const $ = (s) => document.querySelector(s);
+const pad = (n) => String(n).padStart(2, "0");
+const DEFAULT_SIZE = "22-25cm";
+const data = {};          // id -> {status, size}
+let filter = "all";
+let db = null;
+
+function say(text){
+  const box = $("#msg");
+  box.replaceChildren();
+  if (text){ const p = document.createElement("p"); p.textContent = text; box.append(p); }
+}
+
+// ---------- 画面を作る（最初の1回だけ） ----------
+const grid = $("#grid"), strip = $("#strip");
+SOCKS.forEach(([pref, flower, slug], i) => {
+  const id = pad(i + 1);
+  const img = `${BASE}${id}_${slug}_main.jpg`;
+
+  const cell = document.createElement("button");
+  cell.className = "cell"; cell.dataset.id = id; cell.dataset.status = "";
+  cell.setAttribute("aria-label", `${pref}へ移動`);
+  strip.append(cell);
+
+  const card = document.createElement("article");
+  card.className = "card"; card.id = "c" + id; card.dataset.id = id; card.dataset.status = "";
+  card.innerHTML = `
+    <div class="photo"><span class="no">${i + 1}</span>
+      <img loading="lazy" alt="${pref}のソックス" src="${img}">
+      <span class="flag"></span></div>
+    <div class="info"><h2>${pref}</h2><p>${flower}</p></div>
+    <div class="ctl">
+      <select aria-label="${pref}のサイズ">
+        <option value="22-25cm">22-25cm</option><option value="25-28cm">25-28cm</option>
+      </select>
+      <div class="seg" role="group" aria-label="${pref}の状態">
+        <button data-v="" aria-pressed="true">なし</button>
+        <button data-v="GET" aria-pressed="false">GET</button>
+        <button data-v="HAVE" aria-pressed="false">HAVE</button>
+      </div>
+    </div>`;
+  grid.append(card);
+});
+const empty = document.createElement("p");
+empty.className = "empty"; empty.textContent = "該当するソックスはありません"; empty.hidden = true;
+grid.append(empty);
+
+// 画像が読み込めないときは番号だけ表示
+grid.addEventListener("error", (e) => {
+  if (e.target.tagName === "IMG") e.target.style.visibility = "hidden";
+}, true);
+
+// ---------- 表示の更新 ----------
+function current(id){ return data[id] || { status: "", size: DEFAULT_SIZE }; }
+
+function update(){
+  let have = 0, get = 0, shown = 0;
+  SOCKS.forEach((_, i) => {
+    const id = pad(i + 1), { status, size } = current(id);
+    if (status === "HAVE") have++; else if (status === "GET") get++;
+    const card = $("#c" + id);
+    card.dataset.status = status;
+    card.querySelector("select").value = size;
+    card.querySelector(".flag").textContent = status;
+    card.querySelectorAll(".seg button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.v === status)));
+    const match = filter === "all" || filter === status;
+    card.hidden = !match;
+    if (match) shown++;
+    strip.children[i].dataset.status = status;
+  });
+  $("#nHave").textContent = have;
+  $("#nGet").textContent = get;
+  $("#nNone").textContent = 47 - have - get;
+  empty.hidden = shown !== 0;
+}
+
+// ---------- 操作 ----------
+async function save(id, status, size){
+  data[id] = { status, size };
+  update();                                   // 先に画面へ反映
+  if (!db){ return; }
+  try {
+    await setDoc(doc(db, "socks", id), { status, size, updatedAt: serverTimestamp() });
+    say("");
+  } catch (err) {
+    console.error(err);
+    say("保存できませんでした。通信状況と、Firestoreのルール設定（手順3）を確認してください。");
+  }
+}
+
+grid.addEventListener("click", (e) => {
+  const b = e.target.closest(".seg button");
+  if (!b) return;
+  const id = b.closest(".card").dataset.id;
+  save(id, b.dataset.v, current(id).size);
+});
+grid.addEventListener("change", (e) => {
+  if (e.target.tagName !== "SELECT") return;
+  const id = e.target.closest(".card").dataset.id;
+  save(id, current(id).status, e.target.value);
+});
+strip.addEventListener("click", (e) => {
+  const c = e.target.closest(".cell");
+  if (!c) return;
+  const card = $("#c" + c.dataset.id);
+  if (card.hidden){ filter = "all"; syncTabs(); update(); }
+  card.scrollIntoView({ behavior: "smooth", block: "center" });
+  card.classList.add("flash");
+  setTimeout(() => card.classList.remove("flash"), 1200);
+});
+function syncTabs(){
+  document.querySelectorAll(".tab").forEach((t) => t.setAttribute("aria-pressed", String(t.dataset.f === filter)));
+}
+$("#tabs").addEventListener("click", (e) => {
+  const t = e.target.closest(".tab");
+  if (!t) return;
+  filter = t.dataset.f;
+  syncTabs(); update();
+});
+
+// ---------- Firebaseにつなぐ ----------
+let firebaseConfig = null;
+try { ({ firebaseConfig } = await import("./config.js")); } catch (err) { /* config.jsが無い */ }
+
+if (!firebaseConfig || !firebaseConfig.projectId || String(firebaseConfig.apiKey).includes("ここ")){
+  say("config.js が見つからないか、中身が未設定です。手順5を確認してください（それまでは保存されません）。");
+} else {
+  db = getFirestore(initializeApp(firebaseConfig));
+  onSnapshot(collection(db, "socks"), (snap) => {
+    snap.forEach((d) => {
+      const v = d.data();
+      data[d.id] = { status: v.status || "", size: v.size || DEFAULT_SIZE };
+    });
+    update();
+  }, (err) => {
+    console.error(err);
+    say("データを読み込めませんでした。Firestoreのルール設定（手順3）とconfig.jsの内容を確認してください。");
+  });
+}
+update();
+</script>
+</body>
+</html>
